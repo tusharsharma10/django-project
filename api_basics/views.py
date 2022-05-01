@@ -1,43 +1,27 @@
-from django.shortcuts import render
-from django.http import HttpResponse,JsonResponse
-from rest_framework.parsers import JSONParser
+from rest_framework import generics
+from rest_framework import mixins
+from . modelSerializer import ArticleModelSerializer
 from . models import Article
-from .modelSerializer import ArticleModelSerializer
-from django.views.decorators.csrf import csrf_exempt
 
+class GenericAPIView(generics.GenericAPIView,mixins.ListModelMixin,mixins.CreateModelMixin,
+                     mixins.UpdateModelMixin,mixins.RetrieveModelMixin,mixins.DestroyModelMixin):
+    serializer_class = ArticleModelSerializer
+    queryset = Article.objects.all()
+    lookup_field = 'id'
 
-@csrf_exempt
-def articleList(request):
-    if request.method == 'GET':
-        articles = Article.objects.all()
-        serializer = ArticleModelSerializer(articles,many=True)
-        return JsonResponse(serializer.data,safe=False)
+    def get(self,request,id=None):
 
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = ArticleModelSerializer(data=data)
+        if id:
+            return self.retrieve(request)
 
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data,status=201)
-        return JsonResponse(serializer.errors,status=400)
+        else:
+            return self.list(request)
 
+    def post(self,request):
+        return self.create()
 
+    def put(self,request,id=None):
+        return self.update(request,id)
 
-@csrf_exempt
-def articleDetail(request,pk):
-    if request.method == 'GET':
-        articles = Article.objects.get(pk=pk)
-        serializer = ArticleModelSerializer(articles)
-        return JsonResponse(serializer.data)
-
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = ArticleModelSerializer(data=data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data,status=201)
-        return JsonResponse(serializer.errors,status=400)
-
-
+    def delete(self,request):
+        return self.destroy(request,id)
